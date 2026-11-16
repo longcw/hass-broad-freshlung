@@ -52,23 +52,28 @@ class FreshLungFan(FreshLungEntity, FanEntity):
     def preset_mode(self) -> str | None:
         return PRESET_SLEEP if self.status.get("FB_SLEEPMODEL_ON") == "1" else None
 
+    def _gear_ops(self, percentage: int) -> list[tuple[str, str]]:
+        gear = max(1, round(percentage_to_ranged_value((1, self._max_gear), percentage)))
+        # sleep keeps the stored gear and only drops the running one, so a gear change must leave sleep first
+        leave_sleep = [(OP_SLEEP, "0")] if self.preset_mode == PRESET_SLEEP else []
+        return [*leave_sleep, (OP_GEAR, str(gear))]
+
     async def async_turn_on(self, percentage: int | None = None, preset_mode: str | None = None, **kwargs: Any) -> None:
-        if not self.is_on:
-            await self.coordinator.control(self.guid, OP_ON)
+        ops = [] if self.is_on else [(OP_ON, "")]
         if preset_mode:
-            await self.async_set_preset_mode(preset_mode)
+            ops.append((OP_SLEEP, "1"))
         elif percentage:
-            await self.async_set_percentage(percentage)
+            ops += self._gear_ops(percentage)
+        await self.coordinator.control(self.guid, *ops)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        await self.coordinator.control(self.guid, OP_OFF)
+        await self.coordinator.control(self.guid, (OP_OFF, ""))
 
     async def async_set_percentage(self, percentage: int) -> None:
         if percentage == 0:
             await self.async_turn_off()
-            return
-        gear = max(1, round(percentage_to_ranged_value((1, self._max_gear), percentage)))
-        await self.coordinator.control(self.guid, OP_GEAR, str(gear))
+        else:
+            await self.coordinator.control(self.guid, *self._gear_ops(percentage))
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
-        await self.coordinator.control(self.guid, OP_SLEEP, "1")
+        await self.coordinator.control(self.guid, (OP_SLEEP, "1"))

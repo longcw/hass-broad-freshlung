@@ -12,9 +12,10 @@ Home Assistant integration for BROAD (远大) fresh-air ventilators that the 远
 
 - **Fan:** power, speed by gear (1–3, or 1–6 on larger units), and a `sleep` preset.
 - **Sensors:** airflow (m³/h), running gear, coarse and HEPA filter life, fault. PM2.5 and CO2 appear only on units fitted with those modules.
+- **Switch:** sleep mode, on and off.
 - **Buttons:** reset the coarse and HEPA filter timers after a clean or a replacement.
 
-State is polled every 30 seconds, and every command applies the live state the device sends back.
+State is polled every minute. After a command it reads the live state again within a few seconds, until the device shows the change.
 
 ## Notes
 

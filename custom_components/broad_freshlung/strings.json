@@ -4,7 +4,10 @@
       "user": {
         "title": "远大新风 BROAD Air",
         "description": "Log in with your 远大新风 app account.",
-        "data": { "username": "Phone number", "password": "Password" }
+        "data": {
+          "username": "Phone number",
+          "password": "Password"
+        }
       }
     },
     "error": {
@@ -19,17 +22,40 @@
   },
   "entity": {
     "sensor": {
-      "air_volume": { "name": "Airflow" },
-      "gear": { "name": "Running gear" },
-      "coarse_filter_life": { "name": "Coarse filter life" },
-      "hepa_filter_life": { "name": "HEPA filter life" },
-      "coarse_filter_used": { "name": "Coarse filter used" },
-      "hepa_filter_used": { "name": "HEPA filter used" },
-      "fault": { "name": "Fault" }
+      "air_volume": {
+        "name": "Airflow"
+      },
+      "gear": {
+        "name": "Running gear"
+      },
+      "coarse_filter_life": {
+        "name": "Coarse filter life"
+      },
+      "hepa_filter_life": {
+        "name": "HEPA filter life"
+      },
+      "coarse_filter_used": {
+        "name": "Coarse filter used"
+      },
+      "hepa_filter_used": {
+        "name": "HEPA filter used"
+      },
+      "fault": {
+        "name": "Fault"
+      }
     },
     "button": {
-      "reset_coarse_filter": { "name": "Reset coarse filter" },
-      "reset_hepa_filter": { "name": "Reset HEPA filter" }
+      "reset_coarse_filter": {
+        "name": "Reset coarse filter"
+      },
+      "reset_hepa_filter": {
+        "name": "Reset HEPA filter"
+      }
+    },
+    "switch": {
+      "sleep": {
+        "name": "Sleep"
+      }
     }
   }
 }

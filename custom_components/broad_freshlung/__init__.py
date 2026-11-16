@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import timedelta
 from typing import Any
@@ -9,7 +10,7 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator, UpdateFailed
@@ -17,7 +18,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpda
 from .api import BroadAuthError, BroadClient, BroadError
 
 DOMAIN = "broad_freshlung"
-PLATFORMS = [Platform.FAN, Platform.SENSOR, Platform.BUTTON]
+PLATFORMS = [Platform.FAN, Platform.SENSOR, Platform.SWITCH, Platform.BUTTON]
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -25,7 +26,7 @@ class FreshLungCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
     """Polls every Fresh Lung device on the account; data maps eq_guid to its status."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        super().__init__(hass, _LOGGER, config_entry=entry, name=DOMAIN, update_interval=timedelta(seconds=30))
+        super().__init__(hass, _LOGGER, config_entry=entry, name=DOMAIN, update_interval=timedelta(seconds=60))
         self.client = BroadClient(async_get_clientsession(hass), entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD])
         self.devices: dict[str, dict[str, Any]] = {}
 
@@ -39,16 +40,25 @@ class FreshLungCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         except BroadError as err:
             raise UpdateFailed(str(err)) from err
 
-    async def control(self, guid: str, op: str, value: str = "") -> None:
-        """Send an operation and apply the live state it returns."""
+    async def control(self, guid: str, *ops: tuple[str, str]) -> None:
+        """Send operations, then read live state until the device shows the change."""
+        before = _control_state(self.data.get(guid, {}))
         try:
-            state = await self.client.control(guid, op, value)
+            for op, value in ops:
+                # the reply is a bare "1" ack; the device applies the command about a second later
+                await self.client.control(guid, op, value)
+            for delay in (1, 1, 2, 2, 4):
+                await asyncio.sleep(delay)
+                state = await self.client.status(guid)
+                self.async_set_updated_data({**self.data, guid: state})
+                if _control_state(state) != before:
+                    break
         except BroadError as err:
-            raise UpdateFailed(str(err)) from err
-        if state:
-            self.async_set_updated_data({**self.data, guid: state})
-        else:
-            await self.async_request_refresh()
+            raise HomeAssistantError(str(err)) from err
+
+
+def _control_state(status: dict[str, Any]) -> tuple[Any, ...]:
+    return tuple(status.get(k) for k in ("FB_ON", "GEAR_POSITION", "RUNNING_GEAR", "FB_SLEEPMODEL_ON"))
 
 
 class FreshLungEntity(CoordinatorEntity[FreshLungCoordinator]):

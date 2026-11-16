@@ -30,4 +30,4 @@ class FreshLungResetButton(FreshLungEntity, ButtonEntity):
         self._op = op
 
     async def async_press(self) -> None:
-        await self.coordinator.control(self.guid, self._op, "1")
+        await self.coordinator.control(self.guid, (self._op, "1"))
