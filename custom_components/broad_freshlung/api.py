@@ -15,8 +15,8 @@ BASE_URL = "https://broadair.remotcon.mobi"
 # static app token the vendor's login signature is built from
 APP_TOKEN = "8q7l82AxXB8Qo99vesUUvy1ED5tIuPT31NoIL6ZE5THH7clkfN"
 FRESH_LUNG_EQ_TYPE = "03"
-# head codes the server returns for a missing or expired session
-AUTH_CODES = {500, 600, 700, 800}
+# head code for a missing or expired session; the app logs in again only on this one
+SESSION_EXPIRED = 600
 
 # SetFreshLung operations ("sjx"), taken from the vendor app's fb_mainV.html
 OP_REALTIME = "1"
@@ -80,7 +80,12 @@ class BroadClient:
 
     async def status(self, guid: str) -> dict[str, Any]:
         """Ask the device for live state, falling back to the cloud's last stored copy."""
-        state = await self.control(guid, OP_REALTIME, "")
+        try:
+            state = await self.control(guid, OP_REALTIME, "")
+        except BroadAuthError:
+            raise
+        except BroadError:
+            state = None
         if state:
             return state
         stored = _unwrap(await self._post("Equipment/GetFreshLung", {"eq_guid": guid}))
@@ -112,11 +117,15 @@ class BroadClient:
         if code == 200:
             return (envelope.get("Body") or {}).get("Data")
         msg = f"{path}: {head.get('Msg') if isinstance(head, dict) else envelope}"
-        if code in AUTH_CODES:
-            if auth and retry:
-                self._token = None
-                return await self._post(path, payload, auth=auth, retry=False)
+        if not auth:
+            # only login runs unauthenticated, and a refused login means bad credentials
             raise BroadAuthError(msg)
+        if code == SESSION_EXPIRED:
+            if retry:
+                self._token = None
+                return await self._post(path, payload, retry=False)
+            raise BroadAuthError(msg)
+        # other codes (such as 获取数据失败 when the device does not answer) are transient
         raise BroadError(msg)
 
 

@@ -46,7 +46,7 @@ SENSORS = (
         device_class=SensorDeviceClass.VOLUME_FLOW_RATE, native_unit_of_measurement=UnitOfVolumeFlowRate.CUBIC_METERS_PER_HOUR,
         state_class=SensorStateClass.MEASUREMENT,
     ),
-    FreshLungSensorDescription(key="gear", translation_key="gear", value=_num("RUNNING_GEAR"), state_class=SensorStateClass.MEASUREMENT),
+    FreshLungSensorDescription(key="gear", translation_key="gear", value=lambda s: 0 if s.get("FB_ON") != "1" else _num("RUNNING_GEAR")(s), state_class=SensorStateClass.MEASUREMENT),
     FreshLungSensorDescription(
         key="pm25", value=_num("PM_2_5_DUST_CONCENTRATION"), requires="DUST_MODULE_ACCESSORIES",
         device_class=SensorDeviceClass.PM25, native_unit_of_measurement=UnitOfDensity.MICROGRAMS_PER_CUBIC_METER,
