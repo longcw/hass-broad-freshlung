@@ -1,0 +1,35 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "远大新风 BROAD Air",
+        "description": "Log in with your 远大新风 app account.",
+        "data": { "username": "Phone number", "password": "Password" }
+      }
+    },
+    "error": {
+      "invalid_auth": "Wrong phone number or password.",
+      "cannot_connect": "Could not reach the BROAD cloud.",
+      "no_devices": "No Fresh Lung (新风肺保) device is bound to this account."
+    },
+    "abort": {
+      "already_configured": "This account is already configured.",
+      "reauth_successful": "Login updated."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "air_volume": { "name": "Airflow" },
+      "gear": { "name": "Running gear" },
+      "coarse_filter_life": { "name": "Coarse filter life" },
+      "hepa_filter_life": { "name": "HEPA filter life" },
+      "coarse_filter_used": { "name": "Coarse filter used" },
+      "hepa_filter_used": { "name": "HEPA filter used" },
+      "fault": { "name": "Fault" }
+    },
+    "button": {
+      "reset_coarse_filter": { "name": "Reset coarse filter" },
+      "reset_hepa_filter": { "name": "Reset HEPA filter" }
+    }
+  }
+}
