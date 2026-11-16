@@ -45,6 +45,9 @@ class FreshLungFan(FreshLungEntity, FanEntity):
 
     @property
     def percentage(self) -> int | None:
+        # sleep runs below gear 1 while GEAR_POSITION keeps the gear to resume, so no speed applies
+        if self.preset_mode == PRESET_SLEEP:
+            return None
         gear = int(self.status.get("GEAR_POSITION") or 0)
         return ranged_value_to_percentage((1, self._max_gear), gear) if gear > 0 else 0
 
