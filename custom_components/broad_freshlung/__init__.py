@@ -47,8 +47,11 @@ class FreshLungCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             for op, value in ops:
                 # the reply is a bare "1" ack; the device applies the command about a second later
                 await self.client.control(guid, op, value)
-            for delay in (1, 1, 2, 2, 4):
-                await asyncio.sleep(delay)
+            # the cloud sometimes takes well over 10 s to apply a command, so poll each second for up to 20 s
+            loop = asyncio.get_running_loop()
+            deadline = loop.time() + 20
+            while loop.time() < deadline:
+                await asyncio.sleep(1)
                 state = await self.client.status(guid)
                 self.async_set_updated_data({**self.data, guid: state})
                 if _control_state(state) != before:
